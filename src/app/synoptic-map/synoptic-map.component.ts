@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Input, AfterViewInit } from '@angular/core';
+import { Component, ViewChild, ElementRef, Input, AfterViewInit, Renderer2 } from '@angular/core';
 import { fromEvent } from 'rxjs';
 import { switchMap, takeUntil, pairwise, first } from 'rxjs/operators';
 
@@ -26,7 +26,8 @@ export class SynopticMapComponent implements AfterViewInit {
     y: number,
     w: number,
     h: number,
-    c: string
+    c: string,
+    text: string
   }[] = [];
 
   public colors: any[] = [
@@ -39,7 +40,7 @@ export class SynopticMapComponent implements AfterViewInit {
 
   public colorCounter: number = 0;
 
-  constructor() { }
+  constructor(private renderer: Renderer2) { }
 
   ngAfterViewInit() {
     const canvasElementRef: HTMLCanvasElement = this.canvas.nativeElement;
@@ -99,7 +100,8 @@ export class SynopticMapComponent implements AfterViewInit {
           y: this.beginY,
           w: currentX - this.beginX,
           h: currentY - this.beginY,
-          c: this.colors[this.colorCounter%this.colors.length]
+          c: this.colors[this.colorCounter%this.colors.length],
+          text: ''
         };
 
         this.colorCounter++;
@@ -111,7 +113,23 @@ export class SynopticMapComponent implements AfterViewInit {
     });
 
     fromEvent(canvas, 'click').subscribe((e: MouseEvent) => {
-      
+      const rect = canvas.getBoundingClientRect();
+
+      const pos = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+
+      for(let i=0; i<this.rectangles.length; i++) {
+        const rectangle = this.rectangles[i];
+        if(this.checkIfInbound(rectangle,pos)) {
+          console.log('test',i);
+          this.renderer.selectRootElement('#form-'+i).focus();
+        }
+      }
+    });
+
+    fromEvent(canvas, 'mousemove').subscribe((e: MouseEvent) => {
     });
   }
 
@@ -135,6 +153,27 @@ export class SynopticMapComponent implements AfterViewInit {
     if(current) {
       this.cx.strokeRect(this.beginX,this.beginY,current.x-this.beginX,current.y-this.beginY);
     }
+  }
+
+  private checkIfInbound(
+    rectangle: {x:number,y:number,w:number,h:number},
+    position: {x:number, y:number}
+    ): boolean {
+    let xMin, xMax, yMin, yMax;
+
+    if(rectangle.w > 0) {
+      xMin = rectangle.x, xMax = rectangle.x + rectangle.w;
+    } else {
+      xMax = rectangle.x, xMin = rectangle.x + rectangle.w;
+    }
+
+    if(rectangle.h > 0) {
+      yMin = rectangle.y, yMax = rectangle.y + rectangle.h;
+    } else {
+      yMax = rectangle.y, yMin = rectangle.y + rectangle.h;
+    }
+
+    return ((xMin <= position.x && position.x <= xMax) && (yMin <= position.y && position.y <= yMax));
   }
 
 }

@@ -4,6 +4,7 @@
     <div *ngFor="let rect of rectangles; index as i">
       <p>Rectangle {{i}}</p>
       <p [ngStyle]="{'color': rect.c}">Color: {{ rect.c }}</p>
+      <input [id]="'form-'+i" [(ngModel)]="rect.text" #i>
     </div>
   </div>
 </div>
