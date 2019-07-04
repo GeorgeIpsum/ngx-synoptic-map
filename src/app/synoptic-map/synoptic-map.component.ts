@@ -21,6 +21,24 @@ export class SynopticMapComponent implements AfterViewInit {
   public beginX: number;
   public beginY: number;
 
+  public rectangles: {
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    c: string
+  }[] = [];
+
+  public colors: any[] = [
+    "rgba(125,131,255,0.3)",
+    "rgba(000,125,255,0.3)",
+    "rgba(026,255,213,0.3)",
+    "rgba(255,103,000,0.3)",
+    "rgba(099,026,138,0.3)",
+  ]
+
+  public colorCounter: number = 0;
+
   constructor() { }
 
   ngAfterViewInit() {
@@ -42,7 +60,6 @@ export class SynopticMapComponent implements AfterViewInit {
   }
 
   private captureEvents(canvas: HTMLCanvasElement) {
-
     fromEvent(canvas, 'mousedown')
       .pipe(
         switchMap(e => {
@@ -50,39 +67,61 @@ export class SynopticMapComponent implements AfterViewInit {
             .pipe(
               takeUntil(fromEvent(canvas, 'mouseup')),
               takeUntil(fromEvent(canvas, 'mouseleave')),
-              pairwise()
             );
         })
-      ).subscribe((res: [MouseEvent, MouseEvent]) => {
+      ).subscribe((res: MouseEvent) => {
         const rect = canvas.getBoundingClientRect();
 
         if(!this.currentlyDrawing) {
           this.currentlyDrawing = true;
-          this.beginX = res[0].clientX - rect.left;
-          this.beginY = res[0].clientY - rect.top;
+          this.beginX = res.clientX - rect.left;
+          this.beginY = res.clientY - rect.top;
         }
 
-        const prevPos = {
-          x: res[0].clientX - rect.left,
-          y: res[0].clientY - rect.top
-        };
-
         const currentPos = {
-          x: res[1].clientX - rect.left,
-          y: res[1].clientY - rect.top
+          x: res.clientX - rect.left,
+          y: res.clientY - rect.top
         };
 
-        this.draw(prevPos, currentPos);
+        this.draw(currentPos);
       });
     
-    fromEvent(canvas, 'mouseup').subscribe(e => this.currentlyDrawing = false);
+    fromEvent(canvas, 'mouseup').subscribe((e: MouseEvent) => {
+      if(this.currentlyDrawing) {
+        this.currentlyDrawing = false;
+
+        const rect = canvas.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+
+        const rectangle = {
+          x: this.beginX,
+          y: this.beginY,
+          w: currentX - this.beginX,
+          h: currentY - this.beginY,
+          c: this.colors[this.colorCounter%this.colors.length]
+        };
+
+        this.colorCounter++;
+
+        this.rectangles.push(rectangle);
+
+        this.draw();
+      }
+    });
   }
 
 
-  draw(prev: {x:number,y:number}, current: {x:number,y:number}) {
+  private draw(current?: {x:number,y:number}) {
     this.cx.clearRect(0,0,this.canvas.nativeElement.width,this.canvas.nativeElement.height);
-    if(prev) {
-      this.cx.drawImage(this.image,0,0);
+    this.cx.drawImage(this.image,0,0);
+
+    for(let i=0; i < this.rectangles.length; i++) {
+      this.cx.fillStyle = this.rectangles[i].c;
+      this.cx.fillRect(this.rectangles[i].x,this.rectangles[i].y,this.rectangles[i].w,this.rectangles[i].h);
+    }
+
+    if(current) {
       this.cx.strokeRect(this.beginX,this.beginY,current.x-this.beginX,current.y-this.beginY);
     }
   }
