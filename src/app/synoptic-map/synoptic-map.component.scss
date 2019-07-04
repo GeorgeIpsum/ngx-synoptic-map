@@ -4,4 +4,12 @@ canvas {
 .container {
   display: flex;
   align-items: flex-start;
+
+  .holder {
+    margin-left: 1rem;
+    p {
+      font-family: Courier, monospace;
+      font-weight: bold;
+    }
+  }
 }

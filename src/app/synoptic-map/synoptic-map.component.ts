@@ -21,7 +21,7 @@ export class SynopticMapComponent implements AfterViewInit {
   public beginX: number;
   public beginY: number;
 
-  public rectangles: {
+  @Input() public rectangles: {
     x: number,
     y: number,
     w: number,
@@ -30,11 +30,11 @@ export class SynopticMapComponent implements AfterViewInit {
   }[] = [];
 
   public colors: any[] = [
-    "rgba(125,131,255,0.3)",
-    "rgba(000,125,255,0.3)",
-    "rgba(026,255,213,0.3)",
-    "rgba(255,103,000,0.3)",
-    "rgba(099,026,138,0.3)",
+    "rgba(125,131,255,0.5)",
+    "rgba(000,125,255,0.5)",
+    "rgba(026,255,213,0.5)",
+    "rgba(255,103,000,0.5)",
+    "rgba(099,026,138,0.5)",
   ]
 
   public colorCounter: number = 0;
@@ -54,7 +54,7 @@ export class SynopticMapComponent implements AfterViewInit {
 
     this.image.src = this.imageString;
 
-    this.cx.lineWidth = 5;
+    this.cx.lineWidth = 7;
 
     this.captureEvents(canvasElementRef);
   }
@@ -109,16 +109,27 @@ export class SynopticMapComponent implements AfterViewInit {
         this.draw();
       }
     });
+
+    fromEvent(canvas, 'click').subscribe((e: MouseEvent) => {
+      
+    });
   }
 
 
   private draw(current?: {x:number,y:number}) {
     this.cx.clearRect(0,0,this.canvas.nativeElement.width,this.canvas.nativeElement.height);
     this.cx.drawImage(this.image,0,0);
+    this.cx.font = "bold 24px Courier";
 
     for(let i=0; i < this.rectangles.length; i++) {
       this.cx.fillStyle = this.rectangles[i].c;
-      this.cx.fillRect(this.rectangles[i].x,this.rectangles[i].y,this.rectangles[i].w,this.rectangles[i].h);
+      const rect = this.rectangles[i];
+      const text = {x: Math.round((rect.x+(rect.x+rect.w)))/2, y: Math.round((rect.y+(rect.y+rect.h))/2)};
+
+      this.cx.fillRect(rect.x,rect.y,rect.w,rect.h);
+
+      this.cx.fillStyle = "#000";
+      this.cx.fillText(i.toString(),text.x-12, text.y+12);
     }
 
     if(current) {

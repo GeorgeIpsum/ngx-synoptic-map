@@ -1,8 +1,9 @@
 <div class="container">
   <canvas #canvas></canvas>
-  <div>
-    <div *ngFor="let rect of rectangles">
-      This is a rectangle!
+  <div class="holder">
+    <div *ngFor="let rect of rectangles; index as i">
+      <p>Rectangle {{i}}</p>
+      <p [ngStyle]="{'color': rect.c}">Color: {{ rect.c }}</p>
     </div>
   </div>
 </div>
