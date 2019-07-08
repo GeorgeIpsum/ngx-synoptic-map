@@ -2,7 +2,13 @@ h1 {
   text-align: center;
 }
 .container {
+  .form-group {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
   width:100%;
   display: flex;
   justify-content: center;
+  flex-flow: row wrap;
 }

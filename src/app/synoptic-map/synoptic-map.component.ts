@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Input, AfterViewInit, Renderer2 } from '@angular/core';
+import { Component, ViewChild, ElementRef, Input, AfterViewInit, Renderer2, OnChanges, SimpleChanges } from '@angular/core';
 import { fromEvent } from 'rxjs';
 import { switchMap, takeUntil, pairwise, first } from 'rxjs/operators';
 
@@ -7,7 +7,7 @@ import { switchMap, takeUntil, pairwise, first } from 'rxjs/operators';
   templateUrl: './synoptic-map.component.html',
   styleUrls: ['./synoptic-map.component.scss']
 })
-export class SynopticMapComponent implements AfterViewInit {
+export class SynopticMapComponent implements AfterViewInit, OnChanges {
 
   @ViewChild('canvas',{ static: false }) public canvas: ElementRef;
 
@@ -60,6 +60,26 @@ export class SynopticMapComponent implements AfterViewInit {
     this.cx.lineWidth = 7;
 
     this.captureEvents(canvasElementRef);
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if(changes.imageString && changes.imageString.previousValue) {
+      const canvasElementRef: HTMLCanvasElement = this.canvas.nativeElement;
+      this.cx = canvasElementRef.getContext('2d');
+
+      this.image.onload = () => {
+        canvasElementRef.width = this.image.width;
+        canvasElementRef.height = this.image.height;
+
+        this.cx.drawImage(this.image,0,0);
+      };
+
+      this.image.src = this.imageString;
+
+      this.rectangles = [];
+
+      this.captureEvents(canvasElementRef);
+    }
   }
 
   private captureEvents(canvas: HTMLCanvasElement) {
@@ -124,32 +144,59 @@ export class SynopticMapComponent implements AfterViewInit {
 
       for(let i=0; i<this.rectangles.length; i++) {
         const rectangle = this.rectangles[i];
-        if(this.checkIfInbound(rectangle,pos)) {
+        if(this.checkIfInbound(rectangle, pos)) {
           this.renderer.selectRootElement('#form-'+i.toString()).focus();
         }
       }
     });
 
     fromEvent(canvas, 'mousemove').subscribe((e: MouseEvent) => {
+      if(!this.currentlyDrawing) {
+        const rect = canvas.getBoundingClientRect();
 
+        const pos = {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        };
+
+        let oneInbound: boolean = false;
+
+        for(let i=0; i<this.rectangles.length; i++) {
+          const rectangle = this.rectangles[i];
+          if(this.checkIfInbound(rectangle, pos)) {
+            this.rectHoverIndex = i;
+            oneInbound = true;
+            this.draw();
+          }
+        }
+
+        if(!oneInbound) {
+          this.rectHoverIndex = -1;
+          this.draw();
+        }
+      }
     });
   }
 
 
-  private draw(current?: {x:number,y:number}) {
+  draw(current?: {x:number,y:number}) {
     this.cx.clearRect(0,0,this.canvas.nativeElement.width,this.canvas.nativeElement.height);
     this.cx.drawImage(this.image,0,0);
-    this.cx.font = "bold 24px Courier";
+    this.cx.font = "bold 16px Courier";
+    this.cx.textAlign = "center";
 
     for(let i=0; i < this.rectangles.length; i++) {
       this.cx.fillStyle = this.rectangles[i].c;
       const rect = this.rectangles[i];
-      const text = {x: Math.round((rect.x+(rect.x+rect.w)))/2, y: Math.round((rect.y+(rect.y+rect.h))/2)};
-
       this.cx.fillRect(rect.x,rect.y,rect.w,rect.h);
-
+      
       this.cx.fillStyle = "#000";
-      this.cx.fillText(i.toString(),text.x-12, text.y+12);
+      const text = {x: (Math.round((rect.x+(rect.x+rect.w)))/2), y: (Math.round((rect.y+(rect.y+rect.h))/2))+8};
+      if(this.rectHoverIndex != i) {
+        this.cx.fillText(i.toString(), text.x, text.y);
+      } else {
+        this.cx.fillText(rect.text ? rect.text.toString() : 'NO TEXT', text.x, text.y);
+      }
     }
 
     if(current) {
@@ -158,8 +205,8 @@ export class SynopticMapComponent implements AfterViewInit {
   }
 
   private checkIfInbound(
-    rectangle: {x:number,y:number,w:number,h:number},
-    position: {x:number, y:number}
+      rectangle: {x:number,y:number,w:number,h:number},
+      position: {x:number, y:number}
     ): boolean {
     let xMin, xMax, yMin, yMax;
 
@@ -176,6 +223,11 @@ export class SynopticMapComponent implements AfterViewInit {
     }
 
     return ((xMin <= position.x && position.x <= xMax) && (yMin <= position.y && position.y <= yMax));
+  }
+
+  deleteRect(index: number): void {
+    this.rectangles.splice(index);
+    this.draw();
   }
 
 }
