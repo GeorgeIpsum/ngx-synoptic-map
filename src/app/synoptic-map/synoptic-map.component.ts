@@ -21,6 +21,8 @@ export class SynopticMapComponent implements AfterViewInit {
   public beginX: number;
   public beginY: number;
 
+  public rectHoverIndex: number = -1;
+
   @Input() public rectangles: {
     x: number,
     y: number,
@@ -123,13 +125,13 @@ export class SynopticMapComponent implements AfterViewInit {
       for(let i=0; i<this.rectangles.length; i++) {
         const rectangle = this.rectangles[i];
         if(this.checkIfInbound(rectangle,pos)) {
-          console.log('test',i);
-          this.renderer.selectRootElement('#form-'+i).focus();
+          this.renderer.selectRootElement('#form-'+i.toString()).focus();
         }
       }
     });
 
     fromEvent(canvas, 'mousemove').subscribe((e: MouseEvent) => {
+
     });
   }
 
